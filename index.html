@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Crime Law Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .crime-card {
+            transition: all 0.3s ease;
+        }
+        .crime-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .simulation-step {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        .simulation-step.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-indigo-800 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Indian Legal Assistant</h1>
+            <div class="flex space-x-4">
+                <button onclick="showPage('analyzer')" class="px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">Crime Analyzer</button>
+                <button onclick="showPage('procedure')" class="px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">Legal Procedure</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Crime Analyzer Page -->
+    <div id="analyzer" class="page active container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-2">Indian Crime Law Analyzer</h1>
+            <p class="text-gray-600 text-lg">Get instant legal analysis based on Indian Penal Code (IPC)</p>
+            <div class="w-24 h-1 bg-indigo-500 mx-auto mt-4 rounded-full"></div>
+        </header>
+
+        <!-- Input Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-gavel text-indigo-600 text-2xl mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Describe the Crime Scenario</h2>
+            </div>
+            <div class="relative">
+                <textarea id="crimeInput" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Example: A person stole my mobile phone from my pocket in a crowded market..."></textarea>
+                <div class="flex justify-between mt-2">
+                    <button id="voiceBtn" class="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition flex items-center">
+                        <i class="fas fa-microphone mr-2"></i> Voice Input
+                    </button>
+                    <div id="voiceStatus" class="hidden text-sm text-blue-600 flex items-center">
+                        <i class="fas fa-circle pulse mr-1"></i> Listening...
+                    </div>
+                </div>
+                <button id="analyzeBtn" class="mt-4 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition flex items-center">
+                    <i class="fas fa-search mr-2"></i> Analyze Crime
+                </button>
+                <div id="loading" class="hidden mt-4 text-indigo-600">
+                    <i class="fas fa-spinner fa-spin mr-2"></i> Analyzing your scenario...
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-file-alt text-indigo-600 text-2xl mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Legal Analysis</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- IPC Sections -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+                    <div class="bg-indigo-600 px-4 py-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-book mr-2"></i> IPC Sections
+                        </h3>
+                    </div>
+                    <div id="sectionsContent" class="p-4 h-96 overflow-y-auto scrollbar-hide">
+                        <p class="text-gray-500 italic">Analysis will appear here</p>
+                    </div>
+                </div>
+
+                <!-- Punishments -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+                    <div class="bg-red-600 px-4 py-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-handcuffs mr-2"></i> Punishments
+                        </h3>
+                    </div>
+                    <div id="punishmentsContent" class="p-4 h-96 overflow-y-auto scrollbar-hide">
+                        <p class="text-gray-500 italic">Analysis will appear here</p>
+                    </div>
+                </div>
+
+                <!-- Required Proofs -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden fade-in">
+                    <div class="bg-green-600 px-4 py-3">
+                        <h3 class="text-lg font-semibold text-white flex items-center">
+                            <i class="fas fa-clipboard-check mr-2"></i> Required Proofs
+                        </h3>
+                    </div>
+                    <div id="proofsContent" class="p-4 h-96 overflow-y-auto scrollbar-hide">
+                        <p class="text-gray-500 italic">Analysis will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded fade-in">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-circle text-yellow-500 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-yellow-700">
+                            <span class="font-semibold">Disclaimer:</span> This tool provides general information about Indian criminal law based on the scenario you described. It is not a substitute for professional legal advice. For specific legal guidance, please consult a qualified lawyer.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Crimes -->
+        <div class="mt-12">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-lightbulb mr-2 text-yellow-500"></i> Try these sample scenarios:
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="crime-card bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md border border-gray-100" onclick="fillSample('theft')">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-wallet text-indigo-600"></i>
+                        </div>
+                        <h4 class="font-medium">Theft</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">Someone stole my wallet from my bag in a restaurant.</p>
+                </div>
+                <div class="crime-card bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md border border-gray-100" onclick="fillSample('assault')">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-user-injured text-red-600"></i>
+                        </div>
+                        <h4 class="font-medium">Assault</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">A neighbor hit me with a stick during an argument.</p>
+                </div>
+                <div class="crime-card bg-white p-4 rounded-lg shadow cursor-pointer hover:shadow-md border border-gray-100" onclick="fillSample('cybercrime')">
+                    <div class="flex items-center mb-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                            <i class="fas fa-laptop-code text-blue-600"></i>
+                        </div>
+                        <h4 class="font-medium">Cyber Crime</h4>
+                    </div>
+                    <p class="text-sm text-gray-600">Someone created a fake profile using my photos and name.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legal Procedure Page -->
+    <div id="procedure" class="page container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-2">Indian Legal Procedure</h1>
+            <p class="text-gray-600 text-lg">Understand how the Indian legal system works from FIR to judgment</p>
+            <div class="w-24 h-1 bg-indigo-500 mx-auto mt-4 rounded-full"></div>
+        </header>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-balance-scale text-indigo-600 text-2xl mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Criminal Case Journey</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Steps -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Key Steps in a Criminal Case</h3>
+                    <div class="space-y-4">
+                        <div class="p-4 border-l-4 border-indigo-400 bg-indigo-50 rounded-r-lg">
+                            <h4 class="font-medium text-indigo-800">1. Filing an FIR</h4>
+                            <p class="text-sm text-gray-600 mt-1">First Information Report is registered at the police station. Police are legally bound to register FIR for cognizable offenses.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-blue-400 bg-blue-50 rounded-r-lg">
+                            <h4 class="font-medium text-blue-800">2. Investigation</h4>
+                            <p class="text-sm text-gray-600 mt-1">Police collect evidence, record statements, and may arrest suspects. Investigation must be completed within 60-90 days.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-purple-400 bg-purple-50 rounded-r-lg">
+                            <h4 class="font-medium text-purple-800">3. Chargesheet</h4>
+                            <p class="text-sm text-gray-600 mt-1">After investigation, police submit a chargesheet to the court if they find evidence. The court then takes cognizance of the case.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-green-400 bg-green-50 rounded-r-lg">
+                            <h4 class="font-medium text-green-800">4. Framing of Charges</h4>
+                            <p class="text-sm text-gray-600 mt-1">Court formally frames charges against the accused based on evidence. The accused pleads guilty or not guilty.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-yellow-400 bg-yellow-50 rounded-r-lg">
+                            <h4 class="font-medium text-yellow-800">5. Trial</h4>
+                            <p class="text-sm text-gray-600 mt-1">Prosecution presents evidence and witnesses. Defense gets opportunity to cross-examine and present their case.</p>
+                        </div>
+                        <div class="p-4 border-l-4 border-red-400 bg-red-50 rounded-r-lg">
+                            <h4 class="font-medium text-red-800">6. Judgment</h4>
+                            <p class="text-sm text-gray-600 mt-1">Court delivers verdict of conviction or acquittal. If convicted, sentence is pronounced which may include imprisonment or fine.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation -->
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Courtroom Simulation</h3>
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div id="simulationContainer" class="relative h-64 mb-4 bg-gray-100 rounded-lg overflow-hidden">
+                            <!-- Simulation steps will appear here -->
+                            <div id="simulationStep1" class="simulation-step absolute inset-0 flex items-center justify-center">
+                                <div class="text-center p-4">
+                                    <i class="fas fa-file-alt text-4xl text-indigo-600 mb-2"></i>
+                                    <h4 class="font-medium">FIR Registration</h4>
+                                    <p class="text-sm mt-1">Police station registers your complaint</p>
+                                </div>
+                            </div>
+                            <div id="simulationStep2" class="simulation-step absolute inset-0 flex items-center justify-center">
+                                <div class="text-center p-4">
+                                    <i class="fas fa-search text-4xl text-blue-600 mb-2"></i>
+                                    <h4 class="font-medium">Investigation</h4>
+                                    <p class="text-sm mt-1">Police collect evidence and statements</p>
+                                </div>
+                            </div>
+                            <div id="simulationStep3" class="simulation-step absolute inset-0 flex items-center justify-center">
+                                <div class="text-center p-4">
+                                    <i class="fas fa-gavel text-4xl text-purple-600 mb-2"></i>
+                                    <h4 class="font-medium">Charges Framing</h4>
+                                    <p class="text-sm mt-1">Court formally charges the accused</p>
+                                </div>
+                            </div>
+                            <div id="simulationStep4" class="simulation-step absolute inset-0 flex items-center justify-center">
+                                <div class="text-center p-4">
+                                    <i class="fas fa-users text-4xl text-green-600 mb-2"></i>
+                                    <h4 class="font-medium">Witness Examination</h4>
+                                    <p class="text-sm mt-1">Witnesses testify and are cross-examined</p>
+                                </div>
+                            </div>
+                            <div id="simulationStep5" class="simulation-step absolute inset-0 flex items-center justify-center">
+                                <div class="text-center p-4">
+                                    <i class="fas fa-scale-balanced text-4xl text-red-600 mb-2"></i>
+                                    <h4 class="font-medium">Judgment</h4>
+                                    <p class="text-sm mt-1">Court delivers final verdict</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex justify-between">
+                            <button id="prevStep" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50" disabled>
+                                <i class="fas fa-arrow-left mr-2"></i>Previous
+                            </button>
+                            <button id="nextStep" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                Next<i class="fas fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <span id="stepCounter" class="text-sm font-medium text-gray-600">Step 1 of 5</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <h4 class="font-medium text-gray-800 mb-2">Timeframe Estimates</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">FIR to Chargesheet</span>
+                                <span class="text-sm font-medium">60-90 days</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Trial Duration</span>
+                                <span class="text-sm font-medium">6 months to 2 years</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Appeal Process</span>
+                                <span class="text-sm font-medium">1-5 years</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 mt-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-question-circle text-indigo-600 text-2xl mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Frequently Asked Questions</h2>
+            </div>
+            <div class="space-y-4">
+                <div class="border-b border-gray-200 pb-4">
+                    <h4 class="font-medium text-gray-800">Can I file an FIR online?</h4>
+                    <p class="text-sm text-gray-600 mt-1">Some states allow online FIR registration for certain offenses. However, for most serious crimes, physical presence at the police station is required.</p>
+                </div>
+                <div class="border-b border-gray-200 pb-4">
+                    <h4 class="font-medium text-gray-800">What if police refuse to register FIR?</h4>
+                    <p class="text-sm text-gray-600 mt-1">You can approach the Superintendent of Police or file a complaint before the Magistrate under Section 156(3) CrPC.</p>
+                </div>
+                <div class="border-b border-gray-200 pb-4">
+                    <h4 class="font-medium text-gray-800">How long does bail take?</h4>
+                    <p class="text-sm text-gray-600 mt-1">For bailable offenses, it's immediate. For non-bailable, it depends on the court's schedule - typically 3-15 days if bail is granted.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p class="mb-2">Indian Legal Assistant - Comprehensive Legal Information</p>
+            <p class="text-sm text-gray-400">This tool references the Indian Penal Code (IPC), 1860 and other relevant Indian laws.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Enhanced crime database with more keywords and detailed analysis
+        const crimeDatabase = {
+            theft: {
+                keywords: ['steal', 'stole', 'theft', 'rob', 'robbery', 'snatch', 'pickpocket', 'mobile', 'wallet', 'jewelry', 'vehicle', 'bike', 'car', 'bag', 'purse', 'money', 'cash', 'property'],
+                sections: [
+                    "Section 378 - Definition of Theft: Whoever intends to take dishonestly any movable property out of the possession of any person without that person's consent, commits theft.",
+                    "Section 379 - Punishment for theft: Imprisonment up to 3 years or fine or both",
+                    "Section 380 - Theft in dwelling house: Imprisonment up to 7 years and fine",
+                    "Section 381 - Theft by clerk or servant: Imprisonment up to 7 years and fine",
+                    "Section 382 - Theft after preparation for causing death/hurt: Imprisonment up to 10 years"
+                ],
+                punishments: [
+                    "Basic theft: Imprisonment up to 3 years or fine or both (Section 379)",
+                    "Theft in dwelling house: Imprisonment up to 7 years and fine (Section 380)",
+                    "Theft by employee: Imprisonment up to 7 years and fine (Section 381)",
+                    "Theft with preparation to cause harm: Imprisonment up to 10 years (Section 382)",
+                    "Fine amount depends on value of stolen property (typically 1-3 times the value)"
+                ],
+                proofs: [
+                    "FIR copy with complete details of incident",
+                    "Proof of ownership (receipts, bills, documents)",
+                    "Eye-witness accounts (minimum 2 reliable witnesses)",
+                    "CCTV footage from location",
+                    "Recovery memo if property was found",
+                    "Medical report if violence was involved",
+                    "Panchnama of scene of crime",
+                    "Arrest memo if accused was caught"
+                ]
+            },
+            assault: {
+                keywords: ['hit', 'beat', 'attack', 'assault', 'hurt', 'injure', 'slap', 'punch', 'kick', 'stick', 'weapon', 'violence', 'harm', 'injured', 'wound', 'bleed', 'bruise', 'fracture'],
+                sections: [
+                    "Section 351 - Definition of Assault: Whoever makes any gesture or preparation intending or knowing it to be likely that such gesture or preparation will cause any person present to apprehend that he who makes that gesture or preparation is about to use criminal force to that person, is said to commit an assault.",
+                    "Section 352 - Punishment for assault: Imprisonment up to 3 months or fine up to ₹500",
+                    "Section 323 - Voluntarily causing hurt: Imprisonment up to 1 year or fine up to ₹1000",
+                    "Section 325 - Voluntarily causing grievous hurt: Imprisonment up to 7 years and fine",
+                    "Section 326 - Causing grievous hurt by dangerous weapons: Imprisonment up to life"
+                ],
+                punishments: [
+                    "Simple assault: Imprisonment up to 3 months or fine up to ₹500 (Section 352)",
+                    "Voluntarily causing hurt: Imprisonment up to 1 year or fine up to ₹1000 (Section 323)",
+                    "Grievous hurt: Imprisonment up to 7 years and fine (Section 325)",
+                    "Grievous hurt with weapon: Imprisonment up to life (Section 326)",
+                    "If committed against woman/child: Enhanced punishment (Section 354)"
+                ],
+                proofs: [
+                    "Medical examination report with injury details",
+                    "Photographs of injuries with timestamps",
+                    "Weapon used (if recovered)",
+                    "Clothes worn during incident with blood stains",
+                    "At least 2 independent witness statements",
+                    "FIR copy with complete incident details",
+                    "Scene of crime panchnama",
+                    "Any prior complaints against accused"
+                ]
+            },
+            cybercrime: {
+                keywords: ['cyber', 'online', 'internet', 'fake', 'profile', 'hack', 'password', 'social media', 'facebook', 'instagram', 'whatsapp', 'email', 'phishing', 'account', 'fraud', 'scam', 'defame', 'morphed', 'photo'],
+                sections: [
+                    "Section 66C - Identity theft: Imprisonment up to 3 years and fine",
+                    "Section 66D - Cheating by personation: Imprisonment up to 3 years and fine",
+                    "Section 66E - Privacy violation: Imprisonment up to 3 years or fine",
+                    "Section 67 - Obscene content: Imprisonment up to 5 years and fine up to ₹10 lakh",
+                    "Section 43 - Damage to computer system: Compensation up to ₹1 crore"
+                ],
+                punishments: [
+                    "Identity theft: Imprisonment up to 3 years and fine up to ₹1 lakh (Section 66C)",
+                    "Cheating by personation: Imprisonment up to 3 years and fine up to ₹1 lakh (Section 66D)",
+                    "Privacy violation: Imprisonment up to 3 years or fine up to ₹2 lakh (Section 66E)",
+                    "Obscene content: Imprisonment up to 5 years and fine up to ₹10 lakh (Section 67)",
+                    "Compensation for damage: Up to ₹1 crore (Section 43)"
+                ],
+                proofs: [
+                    "Screenshots of fake profile/offensive content with URLs",
+                    "Complete email headers (for email crimes)",
+                    "IP address logs from ISP with timestamps",
+                    "Device information (IMEI, MAC address)",
+                    "Chat logs/message transcripts",
+                    "Bank statements showing fraudulent transactions",
+                    "Affidavit from notary public",
+                    "Cyber cell complaint copy"
+                ]
+            },
+            murder: {
+                keywords: ['kill', 'murder', 'death', 'homicide', 'stab', 'shoot', 'poison', 'strangle', 'dead body', 'blood', 'knife', 'gun', 'weapon', 'suicide', 'kill myself', 'threaten to kill'],
+                sections: [
+                    "Section 299 - Culpable homicide: Whoever causes death by doing an act with the intention of causing death, or with the intention of causing such bodily injury as is likely to cause death, or with the knowledge that he is likely by such act to cause death, commits the offence of culpable homicide.",
+                    "Section 300 - Murder: Except in the cases hereinafter excepted, culpable homicide is murder, if the act by which the death is caused is done with the intention of causing death.",
+                    "Section 302 - Punishment for murder: Death or life imprisonment",
+                    "Section 304 - Culpable homicide not amounting to murder",
+                    "Section 307 - Attempt to murder: Imprisonment up to 10 years"
+                ],
+                punishments: [
+                    "Murder: Death penalty or life imprisonment (Section 302)",
+                    "Culpable homicide not murder: Imprisonment up to 10 years (Section 304)",
+                    "Attempt to murder: Imprisonment up to 10 years (Section 307)",
+                    "If committed with cruelty: Enhanced punishment (Section 302 IPC read with 376A)",
+                    "Fine may be imposed in addition to imprisonment"
+                ],
+                proofs: [
+                    "Post-mortem report with cause of death",
+                    "Murder weapon with fingerprints/DNA",
+                    "Last seen evidence with timestamps",
+                    "Motive establishment (property disputes, etc.)",
+                    "Forensic evidence (blood stains, hair, fibers)",
+                    "CCTV footage of suspect movements",
+                    "Call detail records of accused and victim",
+                    "Recovery of victim's belongings from accused"
+                ]
+            },
+            fraud: {
+                keywords: ['fraud', 'cheat', 'scam', 'fake', 'dupe', 'con', 'swindle', 'forgery', 'document', 'signature', 'property', 'money', 'lakh', 'crore', 'investment', 'scheme', 'job', 'bribe', 'corruption'],
+                sections: [
+                    "Section 415 - Definition of cheating: Whoever, by deceiving any person, fraudulently or dishonestly induces the person so deceived to deliver any property to any person, or to consent that any person shall retain any property, or intentionally induces the person so deceived to do or omit to do anything which he would not do or omit if he were not so deceived.",
+                    "Section 420 - Cheating and dishonestly inducing delivery of property: Imprisonment up to 7 years and fine",
+                    "Section 406 - Criminal breach of trust",
+                    "Section 463 - Forgery",
+                    "Section 468 - Forgery for purpose of cheating"
+                ],
+                punishments: [
+                    "Basic cheating: Imprisonment up to 1 year or fine (Section 417)",
+                    "Cheating with property: Imprisonment up to 7 years and fine (Section 420)",
+                    "Criminal breach of trust: Imprisonment up to 3 years or fine (Section 406)",
+                    "Forgery: Imprisonment up to 2 years or fine (Section 465)",
+                    "Forgery for cheating: Imprisonment up to 7 years and fine (Section 468)"
+                ],
+                proofs: [
+                    "Original fraudulent documents with expert analysis",
+                    "Bank transaction records showing money trail",
+                    "Signed agreements/contracts (if any)",
+                    "Communication records (emails, messages, calls)",
+                    "Complaint history against accused",
+                    "Affidavits from other victims (if applicable)",
+                    "Forensic audit reports (for financial fraud)",
+                    "Admission of guilt (recorded or written)"
+                ]
+            },
+            sexual: {
+                keywords: ['rape', 'molest', 'sexual', 'harassment', 'eve teasing', 'stalking', 'outrage', 'modesty', 'porn', 'nude', 'photo', 'video', 'blackmail', 'touch', 'private part', 'breast', 'grope', 'abuse'],
+                sections: [
+                    "Section 354 - Assault or criminal force to woman with intent to outrage modesty",
+                    "Section 354A - Sexual harassment",
+                    "Section 354B - Assault with intent to disrobe",
+                    "Section 354C - Voyeurism",
+                    "Section 354D - Stalking",
+                    "Section 375 - Rape",
+                    "Section 376 - Punishment for rape"
+                ],
+                punishments: [
+                    "Outraging modesty: Imprisonment up to 5 years (Section 354)",
+                    "Sexual harassment: Imprisonment up to 3 years (Section 354A)",
+                    "Voyeurism: Imprisonment up to 7 years (Section 354C)",
+                    "Stalking: Imprisonment up to 5 years (Section 354D)",
+                    "Rape: Imprisonment not less than 10 years (may extend to life) (Section 376)",
+                    "Gang rape: Imprisonment not less than 20 years (may extend to life)"
+                ],
+                proofs: [
+                    "Medical examination report of victim",
+                    "Clothes worn during incident (for DNA evidence)",
+                    "Statement of victim recorded before magistrate",
+                    "CCTV footage from nearby locations",
+                    "Call records showing contact between parties",
+                    "Any prior complaints against accused",
+                    "Recovery of biological evidence from scene",
+                    "Identification parade if accused not known"
+                ]
+            }
+        };
+
+        // Speech recognition setup
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const crimeInput = document.getElementById('crimeInput');
+        let recognition;
+
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-IN';
+
+            recognition.onstart = function() {
+                voiceStatus.classList.remove('hidden');
+                voiceBtn.classList.add('bg-blue-600', 'text-white');
+                voiceBtn.classList.remove('bg-blue-100', 'text-blue-600');
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                crimeInput.value = transcript;
+                voiceStatus.classList.add('hidden');
+                voiceBtn.classList.remove('bg-blue-600', 'text-white');
+                voiceBtn.classList.add('bg-blue-100', 'text-blue-600');
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error', event.error);
+                voiceStatus.classList.add('hidden');
+                voiceBtn.classList.remove('bg-blue-600', 'text-white');
+                voiceBtn.classList.add('bg-blue-100', 'text-blue-600');
+                alert('Error in voice recognition: ' + event.error);
+            };
+
+            recognition.onend = function() {
+                voiceStatus.classList.add('hidden');
+                voiceBtn.classList.remove('bg-blue-600', 'text-white');
+                voiceBtn.classList.add('bg-blue-100', 'text-blue-600');
+            };
+
+            voiceBtn.addEventListener('click', function() {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    alert('Your browser does not support speech recognition or microphone access is blocked. Please try Chrome or Edge.');
+                }
+            });
+        } catch (e) {
+            voiceBtn.disabled = true;
+            voiceBtn.title = "Speech recognition not supported in your browser";
+            console.warn('Speech recognition not supported', e);
+        }
+
+        // Enhanced crime analysis with keyword matching
+        function analyzeCrime() {
+            const input = document.getElementById('crimeInput').value.toLowerCase();
+            if (!input.trim()) {
+                alert('Please describe a crime scenario');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+
+            // Simulate analysis delay
+            setTimeout(() => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
+                
+                // Find the best matching crime type based on keywords
+                let bestMatch = { crime: null, score: 0 };
+                let allMatches = [];
+                
+                for (const crimeType in crimeDatabase) {
+                    const keywords = crimeDatabase[crimeType].keywords;
+                    let score = 0;
+                    
+                    keywords.forEach(keyword => {
+                        if (input.includes(keyword)) {
+                            // More weight for longer/more specific keywords
+                            const weight = keyword.length > 5 ? 2 : 1;
+                            score += weight;
+                            
+                            // Extra weight for serious crimes
+                            if (['murder', 'rape', 'kidnap', 'terror'].includes(keyword)) {
+                                score += 3;
+                            }
+                        }
+                    });
+                    
+                    allMatches.push({ crime: crimeType, score: score });
+                    
+                    if (score > bestMatch.score) {
+                        bestMatch = { crime: crimeType, score: score };
+                    }
+                }
+
+                // Sort all matches by score
+                allMatches.sort((a, b) => b.score - a.score);
+                
+                // If top matches are close, combine them
+                let matchedCrime = bestMatch.crime;
+                if (allMatches.length > 1 && allMatches[0].score - allMatches[1].score < 3) {
+                    // Combine the top 2 crimes
+                    matchedCrime = [allMatches[0].crime, allMatches[1].crime].join('+');
+                }
+                
+                // If no keywords matched, use theft as default
+                if (bestMatch.score === 0) {
+                    matchedCrime = 'theft';
+                }
+                
+                // Display results
+                displayResults(matchedCrime);
+                
+                // Add confidence indicator
+                const confidence = Math.min(100, Math.round((bestMatch.score / 15) * 100));
+                if (confidence < 60) {
+                    showToast('Analysis confidence is moderate. Please provide more specific details for better results.', 'warning');
+                }
+            }, 1500);
+        }
+
+        // Improved display results with more details
+        function displayResults(crimeType) {
+            let crimeData;
+            
+            // Handle combined crimes
+            if (crimeType.includes('+')) {
+                const types = crimeType.split('+');
+                crimeData = {
+                    sections: [...crimeDatabase[types[0]].sections, ...crimeDatabase[types[1]].sections],
+                    punishments: [...crimeDatabase[types[0]].punishments, ...crimeDatabase[types[1]].punishments],
+                    proofs: [...crimeDatabase[types[0]].proofs, ...crimeDatabase[types[1]].proofs]
+                };
+            } else {
+                crimeData = crimeDatabase[crimeType];
+            }
+            
+            // Update sections with more details
+            const sectionsContent = document.getElementById('sectionsContent');
+            sectionsContent.innerHTML = crimeData.sections.map(section => 
+                `<div class="mb-3 p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400">
+                    <p class="font-medium text-indigo-800">${section}</p>
+                    ${section.includes('Definition') ? '<p class="text-sm text-indigo-600 mt-1">This section defines the legal parameters of the crime</p>' : ''}
+                    ${section.includes('Punishment') ? '<p class="text-sm text-indigo-600 mt-1">This section specifies the legal consequences</p>' : ''}
+                </div>`
+            ).join('');
+            
+            // Update punishments with severity indicators
+            const punishmentsContent = document.getElementById('punishmentsContent');
+            punishmentsContent.innerHTML = crimeData.punishments.map(punishment => {
+                const severity = punishment.includes('life') ? 'High' : 
+                               punishment.includes('7') ? 'Medium-High' :
+                               punishment.includes('3') ? 'Medium' : 'Low';
+                return `<div class="mb-3 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                    <p class="font-medium text-red-800">${punishment}</p>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs font-semibold mr-2">Severity:</span>
+                        <span class="text-xs px-2 py-1 rounded ${severity === 'High' ? 'bg-red-200 text-red-800' : 
+                            severity === 'Medium-High' ? 'bg-orange-200 text-orange-800' :
+                            severity === 'Medium' ? 'bg-yellow-200 text-yellow-800' : 'bg-green-200 text-green-800'}">
+                            ${severity}
+                        </span>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            // Update proofs with importance indicators
+            const proofsContent = document.getElementById('proofsContent');
+            proofsContent.innerHTML = crimeData.proofs.map((proof, index) => {
+                const importance = index < 3 ? 'Critical' : index < 6 ? 'Important' : 'Supporting';
+                return `<div class="mb-3 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                    <p class="font-medium text-green-800">${proof}</p>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs font-semibold mr-2">Importance:</span>
+                        <span class="text-xs px-2 py-1 rounded ${importance === 'Critical' ? 'bg-red-200 text-red-800' : 
+                            importance === 'Important' ? 'bg-yellow-200 text-yellow-800' : 'bg-blue-200 text-blue-800'}">
+                            ${importance}
+                        </span>
+                    </div>
+                </div>`;
+            }).join('');
+            
+            // Show results section
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+            
+            // Show success toast
+            showToast('Analysis completed successfully!', 'success');
+        }
+
+        // Toast notification function
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium flex items-center ${
+                type === 'success' ? 'bg-green-500' : 
+                type === 'warning' ? 'bg-yellow-500' : 
+                'bg-red-500'
+            }`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                    type === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle'} mr-2"></i>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+
+        // Function to fill sample scenario
+        function fillSample(crimeType) {
+            let sampleText = '';
+            switch(crimeType) {
+                case 'theft':
+                    sampleText = 'Someone stole my wallet from my bag in a restaurant. It contained ₹5000 cash, my credit card and Aadhaar card. There were CCTV cameras in the restaurant.';
+                    break;
+                case 'assault':
+                    sampleText = 'My neighbor hit me with a wooden stick during an argument about parking space. I suffered injuries on my arm and head that required 5 stitches. Two other neighbors witnessed the incident.';
+                    break;
+                case 'cybercrime':
+                    sampleText = 'Someone created a fake Facebook profile using my name and photos, and is sending inappropriate messages to my contacts. They are also asking for money from my friends pretending to be me in financial distress.';
+                    break;
+                case 'murder':
+                    sampleText = 'My brother was found dead with multiple stab wounds in his apartment. He had an ongoing property dispute with our cousin who had threatened him last week. The murder weapon was found nearby with fingerprints.';
+                    break;
+                case 'fraud':
+                    sampleText = 'A man promised me a government job for ₹2 lakh but disappeared after taking the money. He showed fake appointment letters and ID cards claiming to be a senior official. Three others also fell victim to his scam.';
+                    break;
+                case 'sexual':
+                    sampleText = 'I was sexually assaulted by a colleague after office hours in the parking lot. He had been making inappropriate comments for months. There are CCTV cameras in the parking area that might have captured the incident.';
+                    break;
+            }
+            
+            document.getElementById('crimeInput').value = sampleText;
+            showToast('Sample scenario loaded. Click "Analyze Crime" to see results.', 'info');
+        }
+
+        // Page navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Simulation controls
+        let currentStep = 1;
+        const totalSteps = 5;
+        
+        function updateSimulation() {
+            // Update step display
+            document.getElementById('stepCounter').textContent = `Step ${currentStep} of ${totalSteps}`;
+            
+            // Update buttons
+            document.getElementById('prevStep').disabled = currentStep === 1;
+            document.getElementById('nextStep').disabled = currentStep === totalSteps;
+            
+            // Update visible step
+            document.querySelectorAll('.simulation-step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById(`simulationStep${currentStep}`).classList.add('active');
+        }
+        
+        document.getElementById('nextStep').addEventListener('click', () => {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateSimulation();
+            }
+        });
+        
+        document.getElementById('prevStep').addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                updateSimulation();
+            }
+        });
+
+        // Initialize simulation
+        updateSimulation();
+
+        // Event listeners
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeCrime);
+        document.getElementById('crimeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeCrime();
+            }
+        });
+    </script>
+</body>
+</html>
